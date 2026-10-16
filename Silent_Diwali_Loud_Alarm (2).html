@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="mr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Silent Diwali — Live Microphone Monitor</title>
+<style>
+:root{--bg:#0b1220;--panel:#152239;--panel2:#0e192b;--text:#f1f6ff;--muted:#a9b9d1;--line:#30425e;--green:#36d58a;--yellow:#ffd166;--red:#ff6577;--blue:#78bcff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top right,#1a3151 0,#0b1220 55%);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:980px;margin:auto;padding:18px}header{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px}.brand{display:flex;gap:12px;align-items:center}.logo{font-size:27px;background:#233e60;border-radius:14px;width:48px;height:48px;display:grid;place-items:center}h1{font-size:clamp(23px,4vw,34px);line-height:1.1;margin:0 0 5px}h2{font-size:18px;margin:0 0 12px}p{margin:0;color:var(--muted)}.tag{font-size:11px;border:1px solid #476184;border-radius:99px;padding:7px 10px;color:#cde3ff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.panel{background:linear-gradient(145deg,#172740,#101b2e);border:1px solid var(--line);border-radius:17px;padding:17px;min-width:0}.status{display:flex;gap:11px;align-items:center;padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;margin-bottom:15px}.dot{width:13px;height:13px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 12px currentColor}.status b{display:block}.status small{color:var(--muted)}.meter{height:13px;border-radius:99px;background:#263751;overflow:hidden;margin:10px 0 7px}.bar{height:100%;width:0;background:var(--green);transition:width .12s,background .12s}.numbers{display:flex;align-items:end;justify-content:space-between;gap:8px}.numbers strong{font-size:34px;line-height:1}.numbers span{font-size:12px;color:var(--muted)}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}.metric{padding:12px;border:1px solid var(--line);background:var(--panel2);border-radius:12px}.metric small{display:block;color:var(--muted)}.metric b{font-size:22px}label{display:block;margin:13px 0 6px;font-size:14px}input[type=range]{width:100%;accent-color:var(--blue)}.rangeval{float:right;color:var(--muted)}button{padding:11px 13px;border-radius:10px;border:1px solid #476184;background:#203653;color:var(--text);font-weight:650;cursor:pointer}button.primary{background:#2467a9;border-color:#4e93d5}button.stop{background:#47232d;border-color:#8a4653}.buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.small{font-size:12px;color:var(--muted);margin-top:10px}.chart{width:100%;height:175px;display:block;background:var(--panel2);border:1px solid var(--line);border-radius:12px}.log{display:grid;gap:7px;margin-top:10px}.logitem{padding:9px 10px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);font-size:13px}.logitem b{display:block}.logitem time{color:var(--muted);font-size:11px}.storageInfo{font-size:13px;color:var(--muted);margin-top:10px}.toggleRow{display:flex;gap:10px;align-items:center;margin-top:10px;font-size:14px}.toggleRow input{accent-color:var(--blue)}.warning{margin-top:14px;padding:13px;border:1px dashed #667a98;border-radius:12px;font-size:12px;color:#c8d6e9}code{background:#0c1727;padding:2px 5px;border-radius:5px}
+@media(max-width:720px){.grid{grid-template-columns:1fr}.wrap{padding:12px}.panel{padding:14px}.tag{max-width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div class="brand"><div class="logo">🔊</div><div><h1>Silent Diwali</h1><p>Live Microphone Noise Awareness Demo</p></div></div><div class="tag">RELATIVE INTENSITY · NOT CALIBRATED dB</div></header>
+<div class="grid">
+<section class="panel">
+<h2>Live microphone input</h2>
+<div class="status"><i class="dot" id="dot"></i><div><b id="stateTitle">Microphone not started</b><small id="stateText">Press Start and allow microphone access.</small></div></div>
+<div class="numbers"><div><strong id="levelNum">—</strong><span> / 100 relative units</span></div><span id="inputStatus">No audio input</span></div>
+<div class="meter"><div class="bar" id="bar"></div></div>
+<div class="metrics">
+<div class="metric"><small>High-level duration</small><b id="duration">00:00</b></div>
+<div class="metric"><small>Warning events</small><b id="events">0</b></div>
+<div class="metric"><small>Peak relative level</small><b id="peak">0</b></div>
+<div class="metric"><small>Mic status</small><b id="micState" style="font-size:16px">OFF</b></div>
+</div>
+<label for="threshold">Warning threshold <span class="rangeval" id="thresholdVal">45</span></label>
+<input id="threshold" type="range" min="10" max="90" value="45">
+<label for="delay">Warn after high level lasts <span class="rangeval" id="delayVal">5 sec</span></label>
+<input id="delay" type="range" min="2" max="20" value="5">
+<div class="buttons"><button class="primary" id="start">🎙 Start microphone</button><button class="stop" id="stop" disabled>■ Stop</button><button id="reset">↻ Reset statistics</button></div>
+<label class="toggleRow"><input type="checkbox" id="beepEnabled" checked> Loud repeating alarm on warning</label>
+<div class="buttons"><button id="notifyBtn">🔔 Enable browser notifications</button></div>
+<p class="small">Tip: click Start microphone once to enable audio. The repeating alarm plays through your computer speakers when a warning triggers. Use a moderate, safe sound; don't set off firecrackers near the phone or deliberately expose yourself to loud noise.</p>
+</section>
+<section class="panel">
+<h2>Recent intensity graph</h2>
+<canvas id="chart" class="chart" width="650" height="300"></canvas>
+<p class="small">Blue line = recent relative intensity. Yellow line = warning threshold. Graph is generated from microphone samples.</p>
+<h2 style="margin-top:20px">Event log</h2>
+<div class="log" id="log"><div class="logitem"><time>READY</time><b>Demo initialized</b>Start microphone to begin live monitoring.</div></div>
+<h2 style="margin-top:20px">Saved monitoring data</h2>
+<div class="metrics"><div class="metric"><small>Saved samples</small><b id="savedCount">0</b></div><div class="metric"><small>Saved warning events</small><b id="savedWarnings">0</b></div></div>
+<div class="buttons"><button class="primary" id="exportCsv">⬇ Download CSV for Excel</button><button id="clearData">🗑 Clear saved data</button></div>
+<p class="storageInfo" id="storageStatus">Data is saved in this browser on this device.</p>
+</section>
+</div>
+<div class="warning"><b>Measurement limitation:</b> This page calculates an approximate relative level from microphone audio samples. It is not calibrated and does not measure reliable sound-pressure level in dB or formal noise exposure. Results vary with the device, microphone, distance, automatic gain control, and browser. Microphone access generally requires HTTPS or localhost. Audio is processed locally by this page and is not uploaded by this code. Sample readings and warning events are saved in this browser's local storage; use Download CSV for an Excel-compatible copy. Clearing browser site data may remove locally saved records.</div>
+</div>
+<script>
+(()=> {
+const $=id=>document.getElementById(id);
+let stream=null,ctx=null,source=null,analyser=null,raf=0,running=false;
+let threshold=45,delaySec=5,highTime=0,warningCount=0,peak=0,level=0,above=false,wasWarned=false,lastFrame=0,lastLog=0;
+let history=[],logs=[],smooth=0,saveTimer=null,lastSavedSecond=0,alarmOsc=null,alarmGain=null,alarmActive=false,alarmSweepTimer=null;
+const DATA_KEY='silentDiwaliSamples_v1';
+const EVENT_KEY='silentDiwaliWarnings_v1';
+let savedSamples=loadSaved(DATA_KEY),savedWarnings=loadSaved(EVENT_KEY);
+function loadSaved(key){try{const v=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(v)?v:[]}catch(e){return []}}
+function persistData(){try{localStorage.setItem(DATA_KEY,JSON.stringify(savedSamples));localStorage.setItem(EVENT_KEY,JSON.stringify(savedWarnings));$('storageStatus').textContent='Saved locally in this browser. Download CSV to keep a separate Excel-compatible copy.';}catch(e){$('storageStatus').textContent='Browser storage is full or unavailable. Download CSV regularly.';}updateSavedCounts()}
+function updateSavedCounts(){$('savedCount').textContent=savedSamples.length;$('savedWarnings').textContent=savedWarnings.length}
+function saveSample(){if(!running)return;const now=new Date();savedSamples.push({timestamp:now.toISOString(),localTime:now.toLocaleString(),relativeLevel:Math.round(level),threshold,highLevelDurationSeconds:Math.floor(highTime),status:level>=threshold?(wasWarned?'WARNING':'HIGH'):level>=threshold*.65?'MODERATE':'NORMAL'});if(savedSamples.length>10000)savedSamples=savedSamples.slice(-10000);persistData()}
+function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"'}
+function downloadCsv(){const rows=[['Timestamp ISO','Local date/time','Relative level (0-100)','Warning threshold','High-level duration (seconds)','Status']];savedSamples.forEach(x=>rows.push([x.timestamp,x.localTime,x.relativeLevel,x.threshold,x.highLevelDurationSeconds,x.status]));const csv='\uFEFF'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Silent_Diwali_Noise_Data.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);log('CSV exported',`${savedSamples.length} saved samples downloaded for Excel.`)}
+function startAlarm(){
+  if(!$('beepEnabled').checked||!ctx||alarmActive)return;
+  try{
+    alarmOsc=ctx.createOscillator();alarmGain=ctx.createGain();
+    alarmOsc.type='sawtooth';
+    alarmOsc.frequency.setValueAtTime(650,ctx.currentTime);
+    // Repeating two-tone siren sweep. Browser/device volume still controls loudness.
+    alarmGain.gain.setValueAtTime(0.0001,ctx.currentTime);
+    alarmGain.gain.linearRampToValueAtTime(0.28,ctx.currentTime+0.08);
+    alarmOsc.connect(alarmGain);alarmGain.connect(ctx.destination);alarmOsc.start();
+    let high=false;
+    alarmSweepTimer=setInterval(()=>{
+      if(!ctx||!alarmOsc||!alarmActive)return;
+      const t=ctx.currentTime;
+      alarmOsc.frequency.cancelScheduledValues(t);
+      alarmOsc.frequency.setValueAtTime(alarmOsc.frequency.value,t);
+      alarmOsc.frequency.linearRampToValueAtTime(high?650:1250,t+0.42);
+      high=!high;
+    },420);
+    alarmActive=true;
+    log('🔊 LOUD ALARM ACTIVE','Repeating siren sound is playing. Lower the threshold or stop monitoring to test/stop it.');
+  }catch(e){stopAlarm();log('Alarm unavailable','Click Start microphone again and check your computer audio output.');}
+}
+function stopAlarm(){
+  if(alarmSweepTimer){clearInterval(alarmSweepTimer);alarmSweepTimer=null;}
+  if(alarmOsc){try{alarmOsc.stop();}catch(e){}try{alarmOsc.disconnect()}catch(e){}alarmOsc=null;}
+  if(alarmGain){try{alarmGain.disconnect()}catch(e){}alarmGain=null;}
+  alarmActive=false;
+}
+function notifyWarning(){if('Notification' in window&&Notification.permission==='granted'){try{new Notification('Silent Diwali: Noise warning',{body:`Relative level ${Math.round(level)} stayed above threshold ${threshold} for ${delaySec} seconds.`})}catch(e){}}}
+function saveWarningEvent(){const event={timestamp:new Date().toISOString(),localTime:new Date().toLocaleString(),relativeLevel:Math.round(level),threshold,durationSeconds:delaySec,message:'High relative sound level persisted'};savedWarnings.push(event);if(savedWarnings.length>2000)savedWarnings=savedWarnings.slice(-2000);persistData();startAlarm();notifyWarning()}
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt=s=>{s=Math.floor(s);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+function log(title,msg){const t=new Date().toLocaleTimeString();logs.unshift({t,title,msg});logs=logs.slice(0,5);$('log').innerHTML=logs.map(x=>`<div class="logitem"><time>${x.t}</time><b>${x.title}</b>${x.msg}</div>`).join('')}
+function setStatus(color,title,text){$('dot').style.background=color;$('dot').style.color=color;$('stateTitle').textContent=title;$('stateText').textContent=text}
+function paint(){
+ const col=level>=threshold?(wasWarned?css('--red'):css('--yellow')):level>=threshold*.65?css('--yellow'):css('--green');
+ $('levelNum').textContent=running?Math.round(level):'—';$('bar').style.width=(running?level:0)+'%';$('bar').style.background=col;
+ $('duration').textContent=fmt(highTime);$('events').textContent=warningCount;$('peak').textContent=Math.round(peak);
+ if(!running){setStatus(css('--green'),'Microphone not started','Press Start and allow microphone access.');}
+ else if(level>=threshold&&wasWarned){setStatus(css('--red'),'NOISE WARNING','High relative intensity persisted. Reduce noise and move away.');}
+ else if(level>=threshold){setStatus(css('--yellow'),'High sound detected',`Above threshold · duration ${Math.floor(above?highTime:0)} sec counted in total`);}
+ else if(level>=threshold*.65){setStatus(css('--yellow'),'Moderate sound','Relative level is rising but below warning threshold.');}
+ else{setStatus(css('--green'),'Level below threshold','No duration warning at the current level.');}
+ $('inputStatus').textContent=running?'Live input':'No audio input';$('micState').textContent=running?'ON':'OFF';
+}
+function draw(){
+ const c=$('chart'),g=c.getContext('2d'),w=c.width,h=c.height,p={l:38,r:12,t:15,b:28};
+ g.clearRect(0,0,w,h);g.fillStyle='#0e192b';g.fillRect(0,0,w,h);g.font='16px system-ui';g.lineWidth=1;g.strokeStyle='#2b3d57';g.fillStyle='#9fb0c8';
+ for(let v=0;v<=100;v+=25){let y=h-p.b-v/100*(h-p.t-p.b);g.beginPath();g.moveTo(p.l,y);g.lineTo(w-p.r,y);g.stroke();g.fillText(v,5,y+5)}
+ let y=h-p.b-threshold/100*(h-p.t-p.b);g.strokeStyle='#ffd166';g.setLineDash([7,5]);g.beginPath();g.moveTo(p.l,y);g.lineTo(w-p.r,y);g.stroke();g.setLineDash([]);
+ if(history.length>1){g.strokeStyle='#78bcff';g.lineWidth=3;g.beginPath();history.forEach((v,i)=>{let x=p.l+i/(history.length-1)*(w-p.l-p.r),yy=h-p.b-v/100*(h-p.t-p.b);i?g.lineTo(x,yy):g.moveTo(x,yy)});g.stroke()}
+}
+function frame(now){
+ if(!running||!analyser)return;
+ if(!lastFrame)lastFrame=now;
+ let dt=Math.min((now-lastFrame)/1000,.25);lastFrame=now;
+ const buf=new Float32Array(analyser.fftSize);analyser.getFloatTimeDomainData(buf);
+ let sum=0;for(let i=0;i<buf.length;i++)sum+=buf[i]*buf[i];
+ const rms=Math.sqrt(sum/buf.length);
+ // Relative scale only: device/browser gain varies; this is intentionally NOT dB.
+ const raw=Math.max(0,Math.min(100,(20*Math.log10(Math.max(rms,0.00001))+60)*1.45));
+ smooth=smooth*.72+raw*.28;level=smooth;
+ if(level>peak)peak=level;
+ if(level>=threshold){above=true;highTime+=dt;if(!wasWarned&&highTime>=delaySec){wasWarned=true;warningCount++;log('⚠ Noise warning',`Relative level stayed above threshold for ${delaySec} seconds.`);saveWarningEvent();}}
+ else {above=false;highTime=0;wasWarned=false;stopAlarm();}
+ if(now-lastLog>250){history.push(level);if(history.length>55)history.shift();draw();lastLog=now;}
+ if(Math.floor(now/1000)!==lastSavedSecond){lastSavedSecond=Math.floor(now/1000);saveSample();}
+ paint();raf=requestAnimationFrame(frame);
+}
+async function start(){
+ if(running)return;
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){log('Microphone unavailable','Use a modern browser over HTTPS or localhost; direct file opening may block microphone access.');setStatus(css('--red'),'Microphone unavailable','Open this page from a secure origin (HTTPS) or localhost.');return;}
+ try{
+ stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
+ ctx=new (window.AudioContext||window.webkitAudioContext)();await ctx.resume();
+ source=ctx.createMediaStreamSource(stream);analyser=ctx.createAnalyser();analyser.fftSize=2048;source.connect(analyser);
+ running=true;lastFrame=0;lastSavedSecond=0;$('start').disabled=true;$('stop').disabled=false;log('Microphone started','Browser permission granted. Audio samples are processed locally.');paint();raf=requestAnimationFrame(frame);
+ }catch(e){log('Microphone permission failed',e.name==='NotAllowedError'?'Allow microphone access in browser site settings, then retry.':e.message);setStatus(css('--red'),'Cannot access microphone','Check browser permission and secure connection.');}
+}
+async function stop(){running=false;cancelAnimationFrame(raf);stopAlarm();if(saveTimer){clearInterval(saveTimer);saveTimer=null;}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}if(ctx){await ctx.close();ctx=null}source=null;analyser=null;$('start').disabled=false;$('stop').disabled=true;lastFrame=0;log('Microphone stopped','Live capture ended.');paint()}
+$('start').addEventListener('click',start);$('stop').addEventListener('click',stop);
+$('beepEnabled').addEventListener('change',()=>{if(!$('beepEnabled').checked)stopAlarm();else if(wasWarned)startAlarm();});
+ $('notifyBtn').addEventListener('click',async()=>{if(!('Notification' in window)){log('Notifications unavailable','This browser does not support desktop notifications.');return;}try{const permission=await Notification.requestPermission();log('Notification setting',permission==='granted'?'Browser notifications enabled.':`Permission status: ${permission}.`);$('notifyBtn').textContent=permission==='granted'?'✓ Browser notifications enabled':'🔔 Enable browser notifications';}catch(e){log('Notification setting failed','Allow notifications in browser settings.');}});
+$('exportCsv').addEventListener('click',downloadCsv);
+$('clearData').addEventListener('click',()=>{if(confirm('Delete all saved samples and warning events from this browser? This cannot be undone.')){savedSamples=[];savedWarnings=[];persistData();log('Saved data cleared','Local samples and warning events were deleted.');}});
+$('threshold').addEventListener('input',e=>{threshold=+e.target.value;$('thresholdVal').textContent=threshold;wasWarned=false;highTime=0;stopAlarm();draw();paint()});
+$('delay').addEventListener('input',e=>{delaySec=+e.target.value;$('delayVal').textContent=delaySec+' sec';paint()});
+$('reset').addEventListener('click',()=>{highTime=0;warningCount=0;peak=0;wasWarned=false;history=[];logs=[];$('log').innerHTML='<div class="logitem"><time>READY</time><b>Statistics reset</b>Monitoring can continue.</div>';draw();paint()});
+window.addEventListener('pagehide',()=>{if(stream)stream.getTracks().forEach(t=>t.stop())});
+updateSavedCounts();paint();draw();
+})();
+</script>
+</body>
+</html>
